@@ -14,29 +14,13 @@ isValidWindow(hWnd) {
         if (!title) {
             break breakToReturnFalse
         }
-        hwndCommit := DllCall("GetAncestor","Ptr",hwnd,"Uint",3,"Ptr")
-        hwndTry := 0
-        loop {
-            hwndTry := DllCall("GetLastActivePopup","Ptr",hwndCommit,"Ptr")
-            if (hwndTry==hwndCommit) {
-                break
-            }
-            if (DllCall("IsWindowVisible","Ptr",hwndTry)) {
-                break
-            }
-            hwndCommit := hwndTry
-        }
-        if (hwndCommit !== hwnd) {
-            break breakToReturnFalse
-        }
         dwExStyle := WinGetExStyle("ahk_id " hWnd)
         if (!(dwExStyle & 0x00040000)) {
             if (dwExStyle & 0x00000080 || dwExStyle & 0x08000000) {
                 break breakToReturnFalse
             }
             owner_hWnd := DllCall("GetWindow", "Ptr", hWnd, "Uint", 4)
-            desktop_hWnd := DllCall("GetDesktopWindow", "Ptr")
-            if (owner_hWnd == desktop_hWnd) {
+            if (owner_hWnd) {
                 break breakToReturnFalse
             }
         }
