@@ -6,22 +6,35 @@ SetWorkingDir A_ScriptDir ; Ensures a consistent starting directory.
 
 SetWinDelay -1
 
-isValidWindow(hWnd) {
+isValidWindow(hWnd,checkUpper:=true) {
     returnValue := false
     breakToReturnFalse:
     loop 1 {
-        title := WinGetTitle("ahk_id " hwnd)
-        if (!title) {
+        dwStyle:=DllCall("GetWindowLongPtrW","Ptr",hWnd,"Int",-16,"Ptr")
+        if (!(dwStyle & 0x10000000)) { ;0x10000000=WS_VISIBLE
             break breakToReturnFalse
         }
-        dwExStyle := WinGetExStyle("ahk_id " hWnd)
-        if (!(dwExStyle & 0x00040000)) {
-            if (dwExStyle & 0x00000080 || dwExStyle & 0x08000000) {
+        dwExStyle:=DllCall("GetWindowLongPtrW","Ptr",hWnd,"Int",-20,"Ptr")
+        if (!(dwExStyle & 0x00040000)) { ;0x00040000=WS_EX_APPWINDOW
+            if (dwExStyle & 0x00000080 || dwExStyle & 0x08000000) { ;0x00000080=WS_EX_TOOLWINDOW, 0x08000000=WS_EX_NOACTIVATE
                 break breakToReturnFalse
             }
-            owner_hWnd := DllCall("GetWindow", "Ptr", hWnd, "Uint", 4)
-            if (owner_hWnd) {
-                break breakToReturnFalse
+            ; if any of ancestor is valid window, can't be valid window
+            if (checkUpper) {
+                toCheck:=[]
+                upHwnd:=hWnd
+                while (upHwnd := DllCall("GetWindow","Ptr",upHwnd,"Uint",4)) { ;4=GW_OWNER
+                    if (upHwnd==65552) {
+                        break breakToReturnFalse
+                    }
+                    toCheck.Push(upHwnd)
+                }
+                i:=toCheck.Length + 1
+                while (i-->1) { ;i goes to 1 (lmao)
+                    if (isValidWindow(toCheck[i],false)) {
+                        break breakToReturnFalse
+                    }
+                }
             }
         }
         returnValue := true
